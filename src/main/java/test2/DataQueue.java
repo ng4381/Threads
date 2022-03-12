@@ -1,46 +1,35 @@
 package test2;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+
 import java.util.LinkedList;
 import java.util.Queue;
 
+@Getter @Setter
 public class DataQueue {
-    private final Queue<Message> queue = new LinkedList<>();
+    private final Queue<Message> queue;
     private final int maxSize;
-    private final Object FULL_QUEUE = new Object();
-    private final Object EMPTY_QUEUE = new Object();
+    private final Object consMonitor = new Object();
+    private final Object prodMonitor = new Object();
+    private volatile int idx;
 
-
-    public DataQueue(int maxSize) {
+    public DataQueue(Queue<Message> queue, int maxSize) {
+        this.queue = queue;
         this.maxSize = maxSize;
-    }
-
-    public void waitOnFull() throws InterruptedException {
-        synchronized (FULL_QUEUE) {
-            FULL_QUEUE.wait();
-        }
-    }
-
-    public void notifyAllForFull() {
-        synchronized (FULL_QUEUE) {
-            FULL_QUEUE.notifyAll();
-        }
-    }
-
-    public void waitOnEmpty() throws InterruptedException {
-        synchronized (EMPTY_QUEUE) {
-            EMPTY_QUEUE.wait();
-        }
-    }
-
-    public void notifyAllForEmpty() {
-        synchronized (EMPTY_QUEUE) {
-            EMPTY_QUEUE.notifyAll();
-        }
+        this.idx = 0;
     }
 
     public void add(Message message) {
         synchronized (queue) {
             queue.add(message);
+        }
+    }
+
+    public void incIdx() {
+        synchronized (queue) {
+            idx++;
         }
     }
 
@@ -50,9 +39,15 @@ public class DataQueue {
         }
     }
 
+    public boolean isEmpty() {
+        synchronized (queue) {
+            return queue.isEmpty();
+        }
+    }
+
     public boolean isFull() {
         synchronized (queue) {
-            return !queue.isEmpty();
+            return queue.size() == maxSize;
         }
     }
 }

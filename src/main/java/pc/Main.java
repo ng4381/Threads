@@ -6,48 +6,33 @@ class PC {
     LinkedList<Integer> list = new LinkedList<>();
     final int capacity = 5;
 
-    public void produce() {
+    public void produce() throws InterruptedException {
         int value = 0;
         synchronized (this) {
             while(true) {
-                if(list.size() == capacity) {
-                    try {
+                while (list.size() == capacity)
                         wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                try {
-                    Thread.sleep(300);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+
+                Thread.sleep(300);
+
                 value++;
                 System.out.println("+ " + value);
                 list.add(value);
-                notifyAll();
+                notify();
             }
         }
     }
 
-    public void consume() {
+    public void consume() throws InterruptedException {
         synchronized (this) {
             while (true) {
                 synchronized (this) {
-                    if(list.size() == 0) {
-                        try {
+                    while(list.size() == 0)
                             wait();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    try {
-                        Thread.sleep(300);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+
+                    Thread.sleep(300);
                     System.out.println("- " + list.remove());
-                    notifyAll();
+                    notify();
                 }
             }
         }
@@ -58,8 +43,20 @@ class PC {
 public class Main {
     public static void main(String[] args) {
         PC pc = new PC();
-        Thread t1 = new Thread(() -> pc.produce());
-        Thread t2 = new Thread(() -> pc.consume());
+        Thread t1 = new Thread(() -> {
+            try {
+                pc.produce();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+        Thread t2 = new Thread(() -> {
+            try {
+                pc.consume();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
 
         t1.start();
         t2.start();
